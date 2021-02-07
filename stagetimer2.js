@@ -1,6 +1,6 @@
-var tcp = require('../../tcp');
+var tcp           = require('../../tcp');
 var instance_skel = require('../../instance_skel');
-var parseString = require('xml2js').parseString;
+var xml2js   = require('xml2js');
 var debug;
 var log;
 
@@ -123,9 +123,8 @@ instance.prototype.init_tcp = function() {
 		self.socket.on('data', function (data) {
 			if (data !== undefined && data.toString().match(/Timers/)) {
 				var xml = data.toString();
-				parseString(xml, function (err, result) {
+				xml2js.parseStringPromise(xml).then(function (result) {
 					if (result !== undefined && result.Timers !== undefined && result.Timers.Timer !== undefined) {
-
 						var t = result.Timers.Timer;
 
 						var t1 = t[0]['$'];
@@ -177,7 +176,9 @@ instance.prototype.init_tcp = function() {
 						self.checkFeedbacks('timer_onovertime');
 
 					}
-
+				})
+				.catch(function (err) {
+					self.log('error',"Error during proccessing data",err)
 				});
 			}
 		});
@@ -399,7 +400,7 @@ instance.prototype.actions = function(system) {
 				{
 					type: 'textinput',
 					label: 'time',
-					id: 'timeTime'
+					id: 'timerTime'
 				}
 			]
 		}
@@ -621,8 +622,7 @@ instance.prototype.action = function(action) {
 				type: "i",
 				value: parseInt(action.options.timerTime)
 		};
-
-		self.system.emit('osc_send', self.config.host, self.config.port, '/timer/${action.options.timerNumber}/${action.options.timerTimeType}/${action.options.timerInDecrease}/', [ bol ] );
+		self.system.emit('osc_send', self.config.host, self.config.port, `/timer/${action.options.timerNumber}/${action.options.timerTimeType}/${action.options.timerInDecrease}`, [ bol ] );
 
 	}
 };
